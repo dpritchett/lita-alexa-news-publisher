@@ -1,30 +1,70 @@
 require 'pry'
+require 'securerandom'
+require 'json'
 
 module Lita
   module Handlers
     class AlexaNewsPublisher < Handler
-      # insert handler code here
-      
       http.get '/alexa/newsfeed/:username', :user_newsfeed
+
+      STORE_KEY = 'alexa_newsfeed'
 
       def user_newsfeed(request, response)
         username = request.env["router.params"][:username]
 
-        msg = redis.get('message') || 'Hello, alexa!'
+        messages = Lita.redis.lrange(STORE_KEY, 0, 10)
 
-        build = { message: msg}
+        formatted_messages = messages.map { |m| alexify m }
 
         response.headers["Content-Type"] = "application/json"
-        response.write(MultiJson.dump(build))
+        response.write(MultiJson.dump(formatted_messages))
+      end
+
+      def alexify(message)
+        parsed = JSON.parse(message)
+
+        {
+          "uid": parsed.fetch('uuid'),
+          "updateDate": parsed.fetch('timestamp'),
+          "titleText": "Multi Item JSON (TTS)",
+          "mainText": parsed.fetch('message'),
+          "redirectionUrl": "https://github.com/dpritchett"
+         }
+      end
+
+      def save_message(username:, message:)
+        payload = {
+          username: username,
+          message: message,
+          uuid: SecureRandom.uuid,  # e.g. 752fc85e-61b1-429f-8a69-cf6e6489c8c1
+          timestamp: Time.now.utc.iso8601 # e.g. 2017-08-18T12:59:51Z
+        }
+
+        begin
+          Lita.redis.rpush(STORE_KEY, JSON.dump(payload))
+          binding.pry
+        rescue Redis::CommandError
+          @retries ||= 0
+          @retries += 1
+
+          Lita.redis.del(STORE_KEY)
+
+          if @retries < 5
+            retry
+          else
+            # handle failure
+          end
+        end
       end
 
       route /(newsfeed) (.*)/i, :publish_to_newsfeed
 
       def publish_to_newsfeed(response)
-        # TODO: figure out redis LIFO arrays via redis.client
-        #binding.pry
+        # TODO: cleanup match parsing
+        msg = response.matches.last.last
+        save_message(username: response.user.name, message: msg)
 
-        redis.set('message', ':pogchamp:')
+        response.reply("Saved message for Alexa: [#{msg}]")
       end
 
       Lita.register_handler(self)
