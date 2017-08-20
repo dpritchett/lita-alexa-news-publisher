@@ -4,8 +4,6 @@ require 'date'
 
 describe Lita::Handlers::AlexaNewsPublisher, lita_handler: true do
   let(:robot) { Lita::Robot.new(registry) }
-  let(:jpeg_url_match) { /http.*\.jpg/i }
-  let(:aliens_template_id) { 101470 }
 
   subject { described_class.new(robot) }
 
@@ -14,12 +12,11 @@ describe Lita::Handlers::AlexaNewsPublisher, lita_handler: true do
   end
 
   describe ':save_message' do
-    it 'returns a jpeg url' do
+    it 'saves a message and acknowledges' do
       result = subject.save_message(username: 'dpritchett', message: 'hello, alexa!')
     end
-  end
 
-  describe ':list_messages' do
+    it { is_expected.to route_event(:save_alexa_message).to(:save_message) }
   end
 
   it 'can grab a message from chat and store it' do
