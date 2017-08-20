@@ -32,6 +32,10 @@ module Lita
          }
       end
 
+      # allow other handlers to send messages through this system
+      #  usage: robot.trigger(:save_alexa_message, username: 'user', message: 'message')
+      on :save_alexa_message, :save_message
+
       def save_message(username:, message:)
         payload = {
           username: username,
