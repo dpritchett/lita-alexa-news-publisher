@@ -8,11 +8,12 @@ module Lita
       http.get '/alexa/newsfeed/:username', :user_newsfeed
 
       STORE_KEY = 'alexa_newsfeed'
+      MAX_MESSAGE_COUNT = 100
 
       def user_newsfeed(request, response)
         username = request.env["router.params"][:username]
 
-        messages = Lita.redis.lrange(STORE_KEY, 0, 10)
+        messages = Lita.redis.lrange(STORE_KEY, 0, MAX_MESSAGE_COUNT)
 
         formatted_messages = messages.map { |m| alexify m }
 
@@ -47,6 +48,8 @@ module Lita
 
         begin
           Lita.redis.rpush(STORE_KEY, JSON.dump(payload))
+
+          prune_message_list!
         rescue Redis::CommandError
           @retries ||= 0
           @retries += 1
@@ -69,6 +72,13 @@ module Lita
         save_message(username: response.user.name, message: msg)
 
         response.reply("Saved message for Alexa: [#{msg}]")
+      end
+
+      # only store the latest N messages in redis at a time
+      def prune_message_list!
+        while Lita.redis.llen(STORE_KEY) > MAX_MESSAGE_COUNT do
+          Lita.redis.lpop(STORE_KEY)
+        end
       end
 
       Lita.register_handler(self)
