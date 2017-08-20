@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "lita-alexa-news-publisher"
-  spec.version       = "0.1.2"
+  spec.version       = "0.1.3"
   spec.authors       = ["Daniel J. Pritchett"]
   spec.email         = ["dpritchett@gmail.com"]
   spec.description   = "Allows Lita users to publish a .plan-style personal news feed for consumption as an Alexa Flash Briefing source"

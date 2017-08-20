@@ -22,13 +22,14 @@ module Lita
 
       def alexify(message)
         parsed = JSON.parse(message)
+        main_text = parsed.fetch('message')
 
         {
           "uid": parsed.fetch('uuid'),
           "updateDate": parsed.fetch('timestamp'),
-          "titleText": "Multi Item JSON (TTS)",
-          "mainText": parsed.fetch('message'),
-          "redirectionUrl": "https://github.com/dpritchett"
+          "titleText": "Lita update",
+          "mainText": main_text,
+          "redirectionUrl": "https://github.com/dpritchett/lita-alexa-news-publisher"
          }
       end
 
