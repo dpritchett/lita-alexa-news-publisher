@@ -46,7 +46,6 @@ module Lita
 
         begin
           Lita.redis.rpush(STORE_KEY, JSON.dump(payload))
-          binding.pry
         rescue Redis::CommandError
           @retries ||= 0
           @retries += 1
