@@ -15,19 +15,18 @@ module Lita
 
         messages = Lita.redis.lrange(STORE_KEY, 0, MAX_MESSAGE_COUNT)
 
-        formatted_messages = messages.map { |m| alexify m }
+        formatted_messages = messages.map { |m| alexify JSON.parse(m, symbolize_names: true) }
 
         response.headers["Content-Type"] = "application/json"
         response.write(MultiJson.dump(formatted_messages))
       end
 
       def alexify(message)
-        parsed = JSON.parse(message)
-        main_text = parsed.fetch('message')
+        main_text = message.fetch(:message)
 
         {
-          "uid": parsed.fetch('uuid'),
-          "updateDate": parsed.fetch('timestamp'),
+          "uid": message.fetch(:uuid),
+          "updateDate": message.fetch(:timestamp),
           "titleText": "Lita update",
           "mainText": main_text,
           "redirectionUrl": "https://github.com/dpritchett/lita-alexa-news-publisher"
@@ -50,6 +49,7 @@ module Lita
           Lita.redis.rpush(STORE_KEY, JSON.dump(payload))
 
           prune_message_list!
+          payload
         rescue Redis::CommandError
           @retries ||= 0
           @retries += 1
