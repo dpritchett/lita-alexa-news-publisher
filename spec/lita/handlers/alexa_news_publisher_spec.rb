@@ -8,7 +8,9 @@ describe Lita::Handlers::AlexaNewsPublisher, lita_handler: true do
   subject { described_class.new(robot) }
 
   describe 'routes' do
-    it { is_expected.to route("Lita newsfeed hello, alexa!") }
+      it { is_expected.to route_http(:get, "/alexa/newsfeed/a_user_name").to(:user_newsfeed) }
+
+      it { is_expected.to route("Lita newsfeed hello, alexa!") }
   end
 
   describe ':save_message' do
