@@ -5,10 +5,19 @@ require 'json'
 module Lita
   module Handlers
     class AlexaNewsPublisher < Handler
-      http.get '/alexa/newsfeed/:username', :user_newsfeed
-
       STORE_KEY = 'alexa_newsfeed'
       MAX_MESSAGE_COUNT = 100
+      
+      http.get '/alexa/newsfeed/:username', :user_newsfeed
+      route /(newsfeed) (.*)/i, :publish_to_newsfeed
+
+      def publish_to_newsfeed(response)
+        # TODO: cleanup match parsing
+        msg = response.matches.last.last
+        save_message(username: response.user.name, message: msg)
+
+        response.reply("Saved message for Alexa: [#{msg}]")
+      end
 
       def user_newsfeed(request, response)
         username = request.env["router.params"][:username]
@@ -62,16 +71,6 @@ module Lita
             # handle failure
           end
         end
-      end
-
-      route /(newsfeed) (.*)/i, :publish_to_newsfeed
-
-      def publish_to_newsfeed(response)
-        # TODO: cleanup match parsing
-        msg = response.matches.last.last
-        save_message(username: response.user.name, message: msg)
-
-        response.reply("Saved message for Alexa: [#{msg}]")
       end
 
       # only store the latest N messages in redis at a time
